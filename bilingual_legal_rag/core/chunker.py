@@ -13,7 +13,7 @@ class ChunkingManager:
             "shell": ["\nfunction ", "\n\n# ", "\n\n", "\n", " "],
             "log": ["\n20", "\n19", "\n[", "\n\n", "\n"],
             "arabic-legal": None,
-            "english-legal": None
+            "english-legal": ["\n\n", ";\n\n", "\n", ". ", " "],
         }
         
         return separator_dict.get(doc_type, separator_dict["prose"])
