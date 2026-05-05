@@ -11,7 +11,7 @@ from bilingual_legal_rag.core.chunker import ChunkingManager
 config_pth = find_config()
 config, metadata = parse_embedding_config(config_pth=config_pth)
 CONTEXT_LIMIT = metadata["context_limit"]
-NDIMS = metadata["ndims"]
+NDIMS = metadata["ndims"] 
 
 embed_model = Llama(**config)
 # bge-small
@@ -64,7 +64,6 @@ class LanceManager:
 
         table = self._get_or_create_table()
         now = datetime.now(timezone.utc)
-        file_hash = get_file_hash(filepath=filepath)
 
         existing_by_hash = table.search().where(f"file_hash = '{file_hash}'").limit(1).to_list()
         existing_by_path = table.search().where(f"filepath = '{filepath}'").limit(1).to_list()
@@ -101,22 +100,15 @@ class LanceManager:
             doc = f.read()
 
         suffix_map = {
-            ".py": "python",
-            ".htm": "html",
-            ".html": "html",
-            ".md": "markdown",
-            ".log" : "log",
-            ".sh": "shell"
+            
         }
         doc_type = suffix_map.get(pth.suffix, "prose")
-        chunks = chunker.chunk_doc(doc=doc, doc_type=doc_type)
+        chunks = chunker.chunk_doc(doc=doc, doc_type="english")
 
         chunks_info = []
         for i, chunk in enumerate(chunks):
             vector = self.embedder.embed([chunk])[0]
             chunks_info.append({
-                "filepath": filepath,
-                "file_hash": file_hash,
                 "last_accessed": now,
                 "chunk_index": i,
                 "text": chunk,

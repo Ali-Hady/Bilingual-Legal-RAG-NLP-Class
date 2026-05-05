@@ -1,9 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from pymongo import MongoClient
-from bilingual_legal_rag.app.config import settings
+from bilingual_legal_rag.app.config import settings # config.py
 import json
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -67,6 +66,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-@app.get('/')
+@app.get('/chat')
 async def hello():
     return {"hi": 200}
