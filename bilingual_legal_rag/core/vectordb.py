@@ -2,10 +2,8 @@ import lancedb
 from lancedb.pydantic import LanceModel, Vector
 from datetime import datetime, timezone
 from pathlib import Path
-from llama_cpp import Llama
 import numpy as np
-from linuxcompanion.core.utils import get_file_hash, parse_embedding_config, find_config
-from linuxcompanion.core.chunker import ChunkingManager
+from bilingual_legal_rag.core.chunker import ChunkingManager
 
 
 # embedding model
@@ -16,15 +14,14 @@ CONTEXT_LIMIT = metadata["context_limit"]
 NDIMS = metadata["ndims"]
 
 embed_model = Llama(**config)
+# bge-small
 
 
 class TextChunk(LanceModel):
-    filepath: str
-    file_hash: str
-    chunk_index: int
+    chunk_index: int 
     last_accessed: datetime
     text: str
-    vector: Vector(NDIMS)  # type: ignore
+    vector: Vector(NDIMS)  # type: ignore 784
 
 
 class Embedder:
@@ -43,13 +40,14 @@ class LanceManager:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            db_path = str(Path.home() / ".companion_memory" / "lancedb")
+            BASE_DIR = Path(__file__).resolve().parent.parent.parent
+            db_path = str(BASE_DIR / ".memory" / "lancedb")
             cls._instance.db = lancedb.connect(db_path)
             cls._instance.embedder = Embedder()
         return cls._instance
 
     def _get_or_create_table(self):
-        table_name = "text_library"
+        table_name = "english_library"
         if table_name not in self.db.table_names():
             return self.db.create_table(table_name, schema=TextChunk)
         return self.db.open_table(table_name)

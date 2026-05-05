@@ -7,11 +7,6 @@ class ChunkingManager:
     def _get_separators(self, doc_type: str):
         separator_dict = {
             "prose": ["\n\n", "\n", ". ", " "],
-            "markdown": ["\n## ", "\n### ", "\n#### ", "\n\n", "\n", ". ", " "],
-            "python": ["\nclass ", "\ndef ", "\n\n", "\n", " "],
-            "html": ["</section>", "</div>", "</p>", "\n\n", "\n", ">", " "],
-            "shell": ["\nfunction ", "\n\n# ", "\n\n", "\n", " "],
-            "log": ["\n20", "\n19", "\n[", "\n\n", "\n"],
             "arabic-legal": None,
             "english-legal": ["\n\n", ";\n\n", "\n", ". ", " "],
         }
