@@ -1,0 +1,27 @@
+--extra-index-url https://download.pytorch.org/whl/cu121
+
+# --- Core ML stack ---
+torch
+torchvision
+torchaudio
+
+# --- Hugging Face / VLM ---
+transformers
+huggingface_hub
+accelerate
+
+# --- Qwen vision-language utilities ---
+qwen-vl-utils
+
+# --- Image + PDF processing ---
+pillow
+pymupdf
+jinja2>=3.1.0
+
+# --- API layer ---
+fastapi
+uvicorn[standard]
+python-multipart
+
+ 
+numpy
