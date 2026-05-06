@@ -9,4 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
-local_data
+# Local Docker/Database mounts
+local_data/
+
+# Ignore raw PDFs/images, but keep the generated JSON!
+seed_data/raw_arabic/

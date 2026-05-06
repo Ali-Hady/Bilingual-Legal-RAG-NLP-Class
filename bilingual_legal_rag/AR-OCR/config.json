@@ -1,0 +1,20 @@
+{
+    "active_engine": "transformers",
+    "engines": 
+    {
+      "transformers": 
+      {
+        "model_path": "sherif1313/Arabic-Qwen3.5-OCR-v4",
+        "device": "auto",
+        "dtype": "float16",
+        "pdf_dpi": 150,
+        "max_new_tokens": 2048,
+        "repetition_penalty": 1.2
+      }
+    },
+    "api_settings": 
+    {
+      "default_prompt": "اقرأ النص في هذه الصورة كاملاً من البداية إلى النهاية.",
+      "clean_output_repetitions": true
+    }
+  }
