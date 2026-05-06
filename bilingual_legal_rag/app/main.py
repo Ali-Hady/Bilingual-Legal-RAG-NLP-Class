@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from pymongo import MongoClient
 from bilingual_legal_rag.app.config import settings
 import json
-
+from bilingual_legal_rag.app.routers import laws, search, rag
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -65,8 +65,15 @@ async def lifespan(app: FastAPI):
         print("Error Closing Connection")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, title="Bilingual Legal RAG API", version="0.1.0",
+    description="API for English and Arabic legal document retrieval and RAG.")
+
+
+app.include_router(laws.router)
+app.include_router(rag.router)
 
 @app.get('/')
-async def hello():
-    return {"hi": 200}
+async def root():
+    return {
+        "Message" : "Hello, We are the Raggers"
+    }

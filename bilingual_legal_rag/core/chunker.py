@@ -8,7 +8,16 @@ class ChunkingManager:
         separator_dict = {
             "prose": ["\n\n", "\n", ". ", " "],
             "arabic-legal": None,
-            "english-legal": ["\n\n", ";\n\n", "\n", ". ", " "],
+            "english-legal": [
+                "\n\n[Section ",
+                "\n\n",
+                ";\n",
+                ". ",
+                "; ",
+                ": ",
+                ", ",
+                " "
+            ],
         }
         
         return separator_dict.get(doc_type, separator_dict["prose"])

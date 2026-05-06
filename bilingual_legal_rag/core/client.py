@@ -1,4 +1,4 @@
-import openai
+import openai  # type: ignore[import]
 from abc import ABC, abstractmethod
 from linuxcompanion.core.schemas import ModelResponse
 import itertools
