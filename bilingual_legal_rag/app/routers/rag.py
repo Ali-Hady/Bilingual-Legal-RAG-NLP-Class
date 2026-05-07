@@ -5,7 +5,7 @@ from bilingual_legal_rag.core.rag import generate
 router = APIRouter(prefix = '/rag', tags = ['RAG'])
 
 
-@router.post('/query', response_model = RagQueryRequest, status_code = status.HTTP_201_CREATED)
+@router.post('/query', response_model = Response, status_code = status.HTTP_201_CREATED)
 async def query_rag(payload : RagQueryRequest, req : Request):
     try:
         database = req.app.state.db
