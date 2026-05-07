@@ -1,11 +1,9 @@
 import lancedb
 from lancedb.pydantic import LanceModel, Vector
-from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 from bilingual_legal_rag.core.chunker import ChunkingManager
 from sentence_transformers import SentenceTransformer
-import lancedb 
 import json 
 
 
@@ -16,7 +14,17 @@ embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilin
 # bge-small
 
 
-class TextChunk(LanceModel):
+class EnglishChunk(LanceModel):
+    doc_id: int
+    act_id: str
+    chunk_index: int 
+    text: str #chunk string
+    vector: Vector(NDIMS)  # type: ignore 384
+
+
+class ArabicChunk(LanceModel):
+    doc_id: int
+    page_num: int
     chunk_index: int 
     text: str #chunk string
     vector: Vector(NDIMS)  # type: ignore 384
@@ -31,33 +39,38 @@ class Embedder:
         return embeddings
 
 
-
 class LanceManager:
     _instance = None
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            # BASE_DIR = Path(__file__).resolve().parent.parent.parent
-            # db_path = BASE_DIR / ".memory" / "lancedb"
-            db_path = Path("data/lancedb")
-            db_path.parent.mkdir(parents=True, exist_ok=True)
-            cls._instance.db = lancedb.connect(str(db_path))
+            db_path = Path(__file__).parent.parent.parent
+            #db_path.parent.mkdir(parents=True, exist_ok=True)
+            cls._instance.db = lancedb.connect(db_path / "lancedb_data")
             cls._instance.embedder = Embedder()
         return cls._instance
+
 
     def _get_or_create_table(self):
             table_map = {}
 
-            for table_name in ["english_library", "arabic_library"]:
+            if "english_library" in self.db.table_names():
+                table = self.db.open_table("english_library")
+            else:
+                table = self.db.create_table(
+                    "english_library",
+                    schema=EnglishChunk
+                )
+            table_map["english_library"] = table
 
-                if table_name in self.db.table_names():
-                    table = self.db.open_table(table_name)
-                else:
-                    table = self.db.create_table(
-                        table_name,
-                        schema=TextChunk
-                    )
-                table_map[table_name] = table
+            if "arabic_library" in self.db.table_names():
+                table = self.db.open_table("arabic_library")
+            else:
+                table = self.db.create_table(
+                    "arabic_library",
+                    schema=ArabicChunk
+                )
+            table_map["arabic_library"] = table
 
             return table_map
         
@@ -86,15 +99,7 @@ class LanceManager:
         return f"Relevant context from the file:\n\n{'\n\n'.join(res)}"
 
 
-    def index_dataset(self, path:str, lang: str):
-        
-        p = Path(path)
-        if not p.exists :
-            raise FileNotFoundError("file not fount")
-        
-        with open (p,"r",encoding="utf-8") as f:
-                    docs = json.load(f)
-
+    def index_dataset(self, docs:list[str], lang: str):
         tables = self._get_or_create_table()
 
         if lang == "en":
@@ -111,15 +116,28 @@ class LanceManager:
 
         for doc_id, doc in enumerate(docs):
             chunks = chunker.chunk_doc(doc=doc, doc_type=lang)
+            
+            if chunks:
+                vectors = self.embedder.embed(chunks)
+            else:
+                vectors = []
 
-            for i, chunk in enumerate(chunks):
-                vector = self.embedder.embed([chunk])[0]
-
-                chunks_info.append({
-                    "doc_id": doc_id,
-                    "chunk_index": i,
-                    "text": chunk,
-                    "vector": vector.tolist()
-                })
+            for i, (chunk, vector) in enumerate(zip(chunks, vectors)):
+                if lang == "en":
+                    chunks_info.append({
+                        "doc_id": doc_id,
+                        "act_id": doc["act_id"],
+                        "chunk_index": i,
+                        "text": chunk,
+                        "vector": vector.tolist()
+                    })
+                elif lang == "ar":
+                    chunks_info.append({
+                        "doc_id": doc_id,
+                        "page_num": doc["page_number"],
+                        "chunk_index": i,
+                        "text": chunk,
+                        "vector": vector.tolist()
+                    })
 
         table.add(chunks_info)

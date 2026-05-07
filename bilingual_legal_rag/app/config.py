@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ENGLISH_SEED: Path = BASE_DIR / "seed_data" / "english_laws.json"
     ARABIC_SEED: Path = BASE_DIR / "seed_data" / "arabic_laws.json"
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env") 
 
 
 settings = Settings()

@@ -1,15 +1,16 @@
 class ChunkingManager:
     def __init__(self, model, context_len, overlap_tokens=50):
         self.model = model
+  
         self.context_len = max(0, context_len - 50)
         self.overlap_tokens = overlap_tokens
 
     def _get_separators(self, doc_type: str):
         separator_dict = {
             "prose": ["\n\n", "\n", ". ", " "],
-            "arabic-legal": None,
-            "english-legal": [
-                "\n\n[Section ",
+            "ar": [], 
+            "en": [
+                "\n\n[Section ", 
                 "\n\n",
                 ";\n",
                 ". ",
@@ -19,30 +20,31 @@ class ChunkingManager:
                 " "
             ],
         }
-        
         return separator_dict.get(doc_type, separator_dict["prose"])
 
     def _count_tokens(self, text: str) -> int:
         if not text or not text.strip():
             return 0
-        return len(self.model.tokenize(text.encode("utf-8")))
+
+        return len(self.model.tokenizer.encode(text, add_special_tokens=False))
 
     def _get_overlap(self, text: str) -> str:
         if not text or self.overlap_tokens == 0:
             return ""
-        tokens = self.model.tokenize(text.encode("utf-8"))
+        tokens = self.model.tokenizer.encode(text, add_special_tokens=False)
         overlap_tokens = tokens[-self.overlap_tokens:]
-        return self.model.detokenize(overlap_tokens).decode("utf-8", errors="replace")
+        return self.model.tokenizer.decode(overlap_tokens)
 
     def _chunk_rec(self, text: str, separators: list, sep_idx: int) -> list[str]:
         if self._count_tokens(text) <= self.context_len:
             return [text]
 
-        if sep_idx >= len(separators):
+        if separators is None or sep_idx >= len(separators):
             return self._fallback_chunk(text)
 
         sep = separators[sep_idx]
         raw_pieces = text.split(sep)
+        
         pieces = [raw_pieces[0]] + [sep + p for p in raw_pieces[1:]]
 
         chunks = []
@@ -76,17 +78,17 @@ class ChunkingManager:
         return [c for c in chunks if c]
 
     def _fallback_chunk(self, text: str) -> list[str]:
-        tokens = self.model.tokenize(text.encode("utf-8"))
+        tokens = self.model.tokenizer.encode(text, add_special_tokens=False)
         chunks = []
         for i in range(0, len(tokens), self.context_len):
-            chunk_tokens = tokens[i:i + self.context_len]
-            chunk = self.model.detokenize(chunk_tokens).decode("utf-8", errors="replace")
+            chunk_tokens = tokens[i : i + self.context_len]
+            chunk = self.model.tokenizer.decode(chunk_tokens)
             if chunk.strip():
                 chunks.append(chunk)
         return chunks
 
     def chunk_doc(self, doc: str, doc_type="prose"):
-        if not doc.strip():
+        if not doc or not doc.strip():
             return []
         separators = self._get_separators(doc_type)
         return self._chunk_rec(doc, separators, 0)

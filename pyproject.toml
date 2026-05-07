@@ -9,7 +9,12 @@ dependencies = [
     "fastapi[standard]>=0.136.1",
     "lancedb>=0.30.2",
     "numpy>=2.4.4",
+    "ollama>=0.6.2",
     "pydantic-settings>=2.14.0",
     "pymongo>=4.17.0",
     "requests>=2.33.1",
+    "sentence-transformers>=5.4.1",
 ]
+
+[[tool.uv.index]]
+url = "https://download.pytorch.org/whl/cpu"

@@ -6,5 +6,15 @@ services:
     volumes:
       - mongo_data:/data/db
 
+  ollama:
+    image: alpine/ollama:latest 
+    container_name: ollama_server
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
 volumes:
   mongo_data:
+  ollama_data:
