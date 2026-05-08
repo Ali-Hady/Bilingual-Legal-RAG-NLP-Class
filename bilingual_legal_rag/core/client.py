@@ -1,84 +1,98 @@
-import openai  # type: ignore[import]
-from abc import ABC, abstractmethod
-from linuxcompanion.core.schemas import ModelResponse
-import itertools
+from ollama import AsyncClient
+import textwrap
 
 
-class ClientInterface(ABC):
-    @abstractmethod
-    def send(self, messages, temp=0.6, tools=None) -> ModelResponse:
-        pass
+class LegalGenerator:
+    def __init__(self, host: str, model: str):
+        self.client = AsyncClient(host=host)
+        self.model = model
 
+    def _build_answer_prompt(self, query: str, context: str, lang: str) -> str:
+        """
+        Constructs the RAG prompt in the requested language.
+        """
+        if lang == "en":
+            return textwrap.dedent(f"""You are a strictly factual Bilingual Legal Assistant.
+                Use ONLY the provided legal context to answer the user's question.
+                Avoid repeating information in the final answer; if a point is covered in a list, do not repeat it in a summary note.
+                If the context does not contain the answer, say exactly: "I cannot answer this based on the provided legal text."
 
-class OpenAIClient(ClientInterface):
-    def __init__(self, port=8000):
-        self.client = openai.OpenAI(
-            base_url=f"http://localhost:{port}/v1", 
-            api_key="sk-no-key-required" 
-        )
+                LEGAL CONTEXT:
+                {context}
 
-    @staticmethod
-    def _handle_tool_chunk(chunk, full_tool_calls):
-        delta = chunk.choices[0].delta
-        if delta.tool_calls: # this is a list of tool calls in the chunk
-            for tc_delta in delta.tool_calls: # each tool call
-                idx = tc_delta.index
+                USER QUESTION: 
+                {query}
 
-                if len(full_tool_calls) <= idx: # new tool call
-                    full_tool_calls.append({
-                        "id": tc_delta.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc_delta.function.name, "arguments": ""
-                        }
-                    })
+                ANSWER:""").strip()
 
-                # Append argument fragments
-                if tc_delta.function.arguments:
-                    full_tool_calls[idx]["function"]["arguments"] += tc_delta.function.arguments
+        elif lang == "ar":
+            return textwrap.dedent(f"""أنت مساعد قانوني ثنائي اللغة يعتمد على الحقائق بصرامة.
+                استخدم السياق القانوني المقدم فقط للإجابة على سؤال المستخدم.
+                 لا تقم بتكرار المعلومات التي قمت بإجابتها بالفعل. 
+                إذا كان السياق لا يحتوي على الإجابة، قل بالحرف الواحد: "لا يمكنني الإجابة على هذا بناءً على النص القانوني المقدم."
 
+                السياق القانوني:
+                {context}
+
+                سؤال المستخدم:
+                {query}
+
+                الإجابة:""").strip()
+        else:
+            raise ValueError(f"Unsupported language: {lang}")
+        
     
-    @staticmethod
-    def _generate_content_stream(stream):
-        return (
-            chunk.choices[0].delta.content 
-            for chunk in stream 
-            if chunk.choices[0].delta.content
-            )
+    def _build_search_prompt(self, query: str, lang: str) -> str:
+        if lang == "en":
+            return textwrap.dedent(f"""You are an expert legal researcher. 
+                Rewrite the user's input into a clear, standalone legal question optimized for a vector database.
+                Remove conversational filler (like "Hi, can you tell me..."), but KEEP it as a natural language question.
+                Output ONLY the revised question and nothing else.
 
+                USER INPUT: {query}
+                REVISED QUESTION:""").strip()
 
-    def send(self, messages, temp=0.6, tools=None) -> ModelResponse:
+        elif lang == "ar":
+            return textwrap.dedent(f"""أنت باحث قانوني خبير.
+                أعد صياغة إدخال المستخدم إلى سؤال قانوني واضح ومستقل مُحسّن لقاعدة بيانات متجهة.
+                قم بإزالة الحشو الحواري (مثل "مرحبًا، هل يمكنك إخباري...")، ولكن احتفظ به كسؤال باللغة الطبيعية.
+                أخرج السؤال المُراجع فقط ولا شيء غيره.
+
+                إدخال المستخدم: {query}
+                السؤال المُراجع:""").strip()
+        else:
+            raise ValueError(f"Unsupported language: {lang}")
+        
+
+    async def generate_search_query(self, query: str, lang: str) -> str:
+        prompt = self._build_search_prompt(query=query, lang=lang)
+
         try:
-            stream = self.client.chat.completions.create(
-                model="local-model",
-                messages=messages,
-                temperature=temp,
-                stream=True,
-                **({"tools": tools} if tools else {})
+            res = await self.client.generate(
+                model=self.model,
+                prompt=prompt,
+                options={"temperature": 0.0, "top_p": 0.1},
+                think=False
             )
 
-            first_chunk = None
-            for chunk in stream:
-                if chunk.choices[0].delta.tool_calls or chunk.choices[0].delta.content:
-                    first_chunk = chunk
-                    break
+            return res["response"].strip().strip('"').strip("'")
+        
+        except Exception as e:
+            print(f"Query generation failed: {e}")
+            return query
 
-            full_stream = itertools.chain([first_chunk], stream)
 
-            if first_chunk.choices[0].delta.tool_calls: # this is a tool call response
-                full_tool_calls = []
-                for chunk in full_stream:
-                    OpenAIClient._handle_tool_chunk(chunk, full_tool_calls)
-                    
-                return ModelResponse(tool_calls=full_tool_calls)
-
-            elif first_chunk.choices[0].delta.content:
-                return ModelResponse(content_stream=OpenAIClient._generate_content_stream(full_stream))
-
-            else:
-                raise RuntimeError("Unexpected empty response from model")
-            
-
-        except openai.APIConnectionError as e:
-            raise ConnectionError("Llama server is not running") from e
+    async def generate_answer(self, query: str, context: str, lang: str) -> str:
+        prompt = self._build_answer_prompt(query=query, context=context, lang=lang)
+        
+        try:
+            response = await self.client.generate(
+                model=self.model,
+                prompt=prompt,
+                options={"temperature": 0.1, "top_p": 0.9},
+                think=False
+            )
+            return response['response']
+        except Exception as e:
+            return f"Error communicating with the generation model: {str(e)}"
 

@@ -3,14 +3,14 @@ from lancedb.pydantic import LanceModel, Vector
 from pathlib import Path
 import numpy as np
 from bilingual_legal_rag.core.chunker import ChunkingManager
-from sentence_transformers import SentenceTransformer
+#from sentence_transformers import SentenceTransformer
 import json 
 
 
 # embedding model
-CONTEXT_LIMIT = 512
+CONTEXT_LIMIT = 128
 NDIMS = 384
-embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+#embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 # bge-small
 
 
@@ -31,23 +31,30 @@ class ArabicChunk(LanceModel):
 
 
 class Embedder:
-    def embed(self, texts: list[str]) -> list[np.ndarray]:
-        embeddings = []
-        response = embedding_model.encode(texts)
-        for vector in response:
-            embeddings.append(np.array(vector))
-        return embeddings
+    def __init__(self, model):
+        self.model = model
 
+    def embed(self, texts: list[str]) -> list[np.ndarray]:
+        return [np.array(vec) for vec in self.model.encode(texts)]
 
 class LanceManager:
     _instance = None
+    
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            
+            # 1. Setup LanceDB Database
             db_path = Path(__file__).parent.parent.parent
-            #db_path.parent.mkdir(parents=True, exist_ok=True)
             cls._instance.db = lancedb.connect(db_path / "lancedb_data")
-            cls._instance.embedder = Embedder()
+            
+            from sentence_transformers import SentenceTransformer
+            print("Loading SentenceTransformer into memory (~400MB)...")
+            
+            model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+            cls._instance.embedder = Embedder(model=model)
+            cls._instance.model = model
+            
         return cls._instance
 
 
@@ -96,7 +103,7 @@ class LanceManager:
             return f"No relevant content found for query: {query}"
 
         res = [f"--- Chunk {c['chunk_index']} ---\n{c['text']}" for c in top_chunks]
-        return f"Relevant context from the file:\n\n{'\n\n'.join(res)}"
+        return f"Relevant context from the database:\n\n{'\n\n'.join(res)}"
 
 
     def index_dataset(self, docs:list[str], lang: str):
@@ -108,14 +115,17 @@ class LanceManager:
             table = tables["arabic_library"]
 
         chunker = ChunkingManager(
-            model=embedding_model,
+            model=self.model,
             context_len=CONTEXT_LIMIT
         )
 
         chunks_info = []
 
         for doc_id, doc in enumerate(docs):
-            chunks = chunker.chunk_doc(doc=doc, doc_type=lang)
+            if lang == "en":
+                chunks = chunker.chunk_doc(doc=doc["cleaned_text"], doc_type=lang)
+            else:
+                chunks = chunker.chunk_doc(doc=doc["text"], doc_type=lang)
             
             if chunks:
                 vectors = self.embedder.embed(chunks)

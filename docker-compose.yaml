@@ -15,6 +15,15 @@ services:
       - ollama_data:/root/.ollama
     restart: unless-stopped
 
+  ollama-init:
+    image: alpine/ollama:latest 
+    container_name: ollama_downloader
+    environment:
+      - OLLAMA_HOST=http://ollama:11434 
+    command: pull qwen3.5:0.8b
+    depends_on:
+      - ollama
+
 volumes:
   mongo_data:
   ollama_data:

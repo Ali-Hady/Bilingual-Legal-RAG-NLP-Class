@@ -5,6 +5,8 @@ from bilingual_legal_rag.app.config import settings # config.py
 import json
 from bilingual_legal_rag.app.routers import laws, search, rag
 from bilingual_legal_rag.core.rag import embed_collection
+from bilingual_legal_rag.core.vectordb import LanceManager
+from bilingual_legal_rag.core.client import LegalGenerator
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,6 +20,13 @@ async def lifespan(app: FastAPI):
     english_doc_cnt = english_collection.count_documents({})
     arabic_doc_cnt = arabic_collection.count_documents({})
 
+    print("Booting up LanceDB and Embedding Model...")
+    LM = LanceManager()
+    app.state.LM = LM
+
+    print("Initializing Legal Model")
+    app.state.generator = LegalGenerator(host=settings.OLLAMA_HOST, model=settings.OLLAMA_MODEL)
+
     if english_doc_cnt == 0:
         print("No English Laws Stored, checking seed...")
         if settings.ENGLISH_SEED.exists():
@@ -27,11 +36,11 @@ async def lifespan(app: FastAPI):
                 if laws_data:
                     english_collection.insert_many(laws_data)
                     print("Created Collection of English Laws in MongoDB")
-                    try:
-                        embed_collection(english_collection, "en")
-                        print("English Laws chunked and stored in vectorDB")
-                    except:
-                        print("Failed to chunk and embed English collection")
+                    # try:
+                    #     embed_collection(english_collection, "en", LM)
+                    #     print("English Laws chunked and stored in vectorDB")
+                    # except Exception as e:
+                    #     print("Failed to chunk and embed English collection", e)
                 else:
                     print("No laws found in english json seed")
         else:
@@ -50,11 +59,11 @@ async def lifespan(app: FastAPI):
                 if laws_data:
                     arabic_collection.insert_many(laws_data)
                     print("Created Collection of Arabic Laws in MongoDB")
-                    try:
-                        embed_collection(arabic_collection, "ar")
-                        print("Arabic Laws chunked and stored in vectorDB")
-                    except:
-                        print("Failed to chunk and embed Arabic collection")
+                    # try:
+                    #     embed_collection(arabic_collection, "ar", LM)
+                    #     print("Arabic Laws chunked and stored in vectorDB")
+                    # except:
+                    #     print("Failed to chunk and embed Arabic collection")
                 else:
                     print("No laws found in Arabic json seed")
         else:

@@ -2,13 +2,26 @@ class ChunkingManager:
     def __init__(self, model, context_len, overlap_tokens=50):
         self.model = model
   
-        self.context_len = max(0, context_len - 50)
+        self.context_len = max(0, context_len - 8)
         self.overlap_tokens = overlap_tokens
 
     def _get_separators(self, doc_type: str):
         separator_dict = {
             "prose": ["\n\n", "\n", ". ", " "],
-            "ar": [], 
+            "ar": [
+                "\n\n",        
+                "\n# ",        
+                "\nمادة ",     
+                "\nوعلى ",     
+                ";\n",         
+                "\n",          
+                ". ",          
+                "؛ ",          
+                "; ",         
+                " : ",         
+                "، ",          
+                " "            
+            ], 
             "en": [
                 "\n\n[Section ", 
                 "\n\n",

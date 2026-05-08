@@ -27,3 +27,8 @@ class Response(BaseModel):
     answer : str
     sources : list[Source]
     retrieved_chunks : list[RetrievedChunk]
+
+
+class QueryRequest(BaseModel):
+    query: str
+    lang: str # "en" or "ar"
