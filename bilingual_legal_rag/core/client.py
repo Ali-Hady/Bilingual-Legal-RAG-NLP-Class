@@ -26,18 +26,17 @@ class LegalGenerator:
                 ANSWER:""").strip()
 
         elif lang == "ar":
-            return textwrap.dedent(f"""أنت مساعد قانوني ثنائي اللغة يعتمد على الحقائق بصرامة.
-                استخدم السياق القانوني المقدم فقط للإجابة على سؤال المستخدم.
-                 لا تقم بتكرار المعلومات التي قمت بإجابتها بالفعل. 
-                إذا كان السياق لا يحتوي على الإجابة، قل بالحرف الواحد: "لا يمكنني الإجابة على هذا بناءً على النص القانوني المقدم."
+            return textwrap.dedent(f"""أنت مساعد قانوني دقيق.
+                مهمتك هي استخراج الإجابة من النص القانوني التالي فقط.
+                لا تضف أي معلومات من خارج النص. أجب باختصار شديد.
 
-                السياق القانوني:
+                النص القانوني:
                 {context}
 
-                سؤال المستخدم:
+                السؤال:
                 {query}
 
-                الإجابة:""").strip()
+                الإجابة المستخرجة من النص:""").strip()
         else:
             raise ValueError(f"Unsupported language: {lang}")
         
@@ -86,12 +85,25 @@ class LegalGenerator:
         prompt = self._build_answer_prompt(query=query, context=context, lang=lang)
         
         try:
-            response = await self.client.generate(
-                model=self.model,
-                prompt=prompt,
-                options={"temperature": 0.1, "top_p": 0.9},
-                think=False
-            )
+            if lang == "en":
+                response = await self.client.generate(
+                    model=self.model,
+                    prompt=prompt,
+                    options={"temperature": 0.1, "top_p": 0.9},
+                    think=False
+                )
+            else:
+                response = await self.client.generate(
+                    model=self.model,
+                    prompt=prompt,
+                    options={
+                        "temperature": 0.2, 
+                        "top_p": 0.9,
+                        "num_predict": 1024,      
+                        "repeat_penalty": 1.15  
+                    },
+                    think=False
+                )
             return response['response']
         except Exception as e:
             return f"Error communicating with the generation model: {str(e)}"
