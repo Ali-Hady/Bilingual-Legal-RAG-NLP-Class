@@ -1,0 +1,17 @@
+.env
+
+.venv/
+venv/
+env/
+
+lancedb_data/
+mongo_data/
+ollama_data/
+
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+.git/
+.gitignore

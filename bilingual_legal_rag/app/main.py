@@ -4,7 +4,6 @@ from pymongo import MongoClient
 from bilingual_legal_rag.app.config import settings # config.py
 import json
 from bilingual_legal_rag.app.routers import laws, search, rag
-from bilingual_legal_rag.core.rag import embed_collection
 from bilingual_legal_rag.core.vectordb import LanceManager
 from bilingual_legal_rag.core.client import LegalGenerator
 
@@ -36,11 +35,6 @@ async def lifespan(app: FastAPI):
                 if laws_data:
                     english_collection.insert_many(laws_data)
                     print("Created Collection of English Laws in MongoDB")
-                    # try:
-                    #     embed_collection(english_collection, "en", LM)
-                    #     print("English Laws chunked and stored in vectorDB")
-                    # except Exception as e:
-                    #     print("Failed to chunk and embed English collection", e)
                 else:
                     print("No laws found in english json seed")
         else:
@@ -59,11 +53,6 @@ async def lifespan(app: FastAPI):
                 if laws_data:
                     arabic_collection.insert_many(laws_data)
                     print("Created Collection of Arabic Laws in MongoDB")
-                    # try:
-                    #     embed_collection(arabic_collection, "ar", LM)
-                    #     print("Arabic Laws chunked and stored in vectorDB")
-                    # except:
-                    #     print("Failed to chunk and embed Arabic collection")
                 else:
                     print("No laws found in Arabic json seed")
         else:

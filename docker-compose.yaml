@@ -24,6 +24,23 @@ services:
     depends_on:
       - ollama
 
+  api:
+    build: .
+    container_name: fastapi_rag_app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - mongodb
+      - ollama
+    volumes:
+      - ./lancedb_data:/app/lancedb_data
+      - ./seed_data:/app/seed_data
+
 volumes:
   mongo_data:
   ollama_data:
