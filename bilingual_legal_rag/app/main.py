@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from pymongo import MongoClient
 from bilingual_legal_rag.app.config import settings # config.py
 import json
-from bilingual_legal_rag.app.routers import laws, search, rag
+from bilingual_legal_rag.app.routers import laws, rag
 from bilingual_legal_rag.core.vectordb import LanceManager
 from bilingual_legal_rag.core.client import LegalGenerator
 

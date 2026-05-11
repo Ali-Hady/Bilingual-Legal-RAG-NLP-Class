@@ -70,7 +70,7 @@ class LegalGenerator:
             res = await self.client.generate(
                 model=self.model,
                 prompt=prompt,
-                options={"temperature": 0.0, "top_p": 0.1},
+                options={"temperature": 0.0, "top_p": 0.1}, 
                 think=False
             )
 

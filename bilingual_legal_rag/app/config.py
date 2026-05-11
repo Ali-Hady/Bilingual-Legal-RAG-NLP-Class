@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     MONGO_URI: str
     DB_NAME: str
 
-    OLLAMA_HOST: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "qwen3.5:0.8b"
 
     ENGLISH_COLLECTION: str = "english_laws"
