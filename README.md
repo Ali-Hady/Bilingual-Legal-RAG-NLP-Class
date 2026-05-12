@@ -329,7 +329,3 @@ docker compose down -v       # Stop containers AND delete all data volumes
 | Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` | Bilingual semantic space |
 | Package manager | uv | Fast, reproducible Python deps |
 | Containerisation | Docker Compose | Single-command full-stack launch |
-
----
-
-*Report generated for NLP Course — Phase 5 Technical Documentation.*
